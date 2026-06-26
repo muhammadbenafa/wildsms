@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WildSMS — Wildlife Awareness Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --forest:   #0d2818;
+    --canopy:   #1a4030;
+    --moss:     #2d6a4f;
+    --leaf:     #52b788;
+    --lime:     #95d5b2;
+    --mist:     #d8f3dc;
+    --soil:     #8b5e3c;
+    --amber:    #e9c46a;
+    --fire:     #e76f51;
+    --sky:      #48cae4;
+    --ink:      #1a1a1a;
+    --paper:    #f8faf8;
+    --border:   rgba(45,106,79,0.15);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Space Grotesk',sans-serif; background:var(--paper); color:var(--ink); min-height:100vh; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    position:fixed; top:0; left:0; width:220px; height:100vh;
+    background:var(--forest); display:flex; flex-direction:column;
+    border-right:1px solid rgba(82,183,136,0.1);
+  }
+  .logo {
+    padding:24px 20px 20px;
+    border-bottom:1px solid rgba(82,183,136,0.15);
+  }
+  .logo-mark {
+    font-family:'Space Mono',monospace; font-size:18px; font-weight:700;
+    color:var(--lime); letter-spacing:-0.5px;
+  }
+  .logo-sub { font-size:10px; color:rgba(149,213,178,0.6); margin-top:2px; letter-spacing:0.06em; text-transform:uppercase; }
+  .nav { flex:1; padding:16px 0; }
+  .nav-item {
+    display:flex; align-items:center; gap:10px; padding:10px 20px;
+    font-size:13px; color:rgba(149,213,178,0.7); cursor:pointer;
+    border-left:2px solid transparent; transition:all .15s;
+  }
+  .nav-item:hover { color:var(--lime); background:rgba(82,183,136,0.08); }
+  .nav-item.active { color:var(--lime); border-left-color:var(--leaf); background:rgba(82,183,136,0.12); font-weight:500; }
+  .nav-icon { font-size:16px; width:18px; text-align:center; }
+  .sidebar-footer {
+    padding:16px 20px; border-top:1px solid rgba(82,183,136,0.12);
+  }
+  .at-badge {
+    font-size:10px; color:rgba(149,213,178,0.5); letter-spacing:0.05em;
+    text-transform:uppercase;
+  }
+  .env-pill {
+    display:inline-block; font-size:10px; padding:2px 8px; border-radius:20px;
+    background:rgba(233,196,106,0.15); color:var(--amber); margin-top:4px;
+    font-family:'Space Mono',monospace;
+  }
+
+  /* ── MAIN ── */
+  .main { margin-left:220px; padding:32px; }
+  .page { display:none; }
+  .page.active { display:block; }
+
+  /* ── HEADER ── */
+  .page-header { margin-bottom:28px; }
+  .page-title { font-size:22px; font-weight:600; color:var(--forest); }
+  .page-sub { font-size:13px; color:#666; margin-top:4px; }
+
+  /* ── STAT CARDS ── */
+  .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
+  .stat-card {
+    background:#fff; border:1px solid var(--border); border-radius:12px;
+    padding:18px 20px; position:relative; overflow:hidden;
+  }
+  .stat-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  }
+  .stat-card.green::before { background:var(--leaf); }
+  .stat-card.amber::before { background:var(--amber); }
+  .stat-card.fire::before  { background:var(--fire); }
+  .stat-card.sky::before   { background:var(--sky); }
+  .stat-num { font-size:28px; font-weight:600; font-family:'Space Mono',monospace; color:var(--forest); }
+  .stat-label { font-size:11px; color:#888; margin-top:4px; text-transform:uppercase; letter-spacing:0.06em; }
+  .stat-icon { position:absolute; right:16px; top:50%; transform:translateY(-50%); font-size:28px; opacity:.12; }
+
+  /* ── GRID ── */
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px; }
+  .full-col { margin-bottom:18px; }
+
+  /* ── PANELS ── */
+  .panel {
+    background:#fff; border:1px solid var(--border); border-radius:12px; overflow:hidden;
+  }
+  .panel-head {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; border-bottom:1px solid var(--border);
+    background:rgba(216,243,220,0.3);
+  }
+  .panel-title { font-size:13px; font-weight:600; color:var(--forest); }
+  .panel-body { padding:16px 18px; }
+
+  /* ── TABLE ── */
+  .data-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .data-table th { text-align:left; padding:8px 10px; color:#888; font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--border); }
+  .data-table td { padding:9px 10px; border-bottom:1px solid rgba(0,0,0,.04); color:var(--ink); vertical-align:middle; }
+  .data-table tr:last-child td { border-bottom:none; }
+  .data-table tr:hover td { background:rgba(216,243,220,.3); }
+
+  /* ── BADGES ── */
+  .badge { display:inline-block; font-size:10px; font-weight:500; padding:2px 8px; border-radius:20px; font-family:'Space Mono',monospace; }
+  .badge-in  { background:rgba(72,202,228,.15); color:#0077a8; }
+  .badge-out { background:rgba(82,183,136,.15); color:var(--moss); }
+  .badge-new { background:rgba(231,111,81,.12); color:#c94f2e; }
+  .badge-seen{ background:rgba(0,0,0,.06); color:#777; }
+  .badge-env { background:rgba(233,196,106,.18); color:#9a6e00; }
+
+  /* ── COMPOSE ── */
+  .compose-area { display:flex; flex-direction:column; gap:12px; }
+  .field-label { font-size:11px; font-weight:500; color:#666; margin-bottom:4px; text-transform:uppercase; letter-spacing:.05em; }
+  select, input[type=text], textarea, input[type=tel] {
+    width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px;
+    font-family:'Space Grotesk',sans-serif; font-size:13px; color:var(--ink);
+    background:#fafafa; transition:border .15s;
+  }
+  select:focus, input:focus, textarea:focus { outline:none; border-color:var(--leaf); background:#fff; }
+  textarea { resize:vertical; min-height:80px; }
+  .char-bar { height:3px; border-radius:2px; background:var(--border); margin-top:4px; overflow:hidden; }
+  .char-fill { height:100%; background:var(--leaf); transition:width .1s; border-radius:2px; }
+  .char-fill.warn { background:var(--amber); }
+  .char-fill.over { background:var(--fire); }
+  .char-meta { font-size:11px; color:#888; margin-top:3px; font-family:'Space Mono',monospace; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:9px 18px; border-radius:8px; font-size:13px;
+    font-family:'Space Grotesk',sans-serif; font-weight:500;
+    cursor:pointer; border:none; transition:all .15s;
+  }
+  .btn-primary { background:var(--moss); color:#fff; }
+  .btn-primary:hover { background:var(--canopy); }
+  .btn-secondary { background:transparent; color:var(--moss); border:1px solid var(--leaf); }
+  .btn-secondary:hover { background:var(--mist); }
+  .btn-fire { background:var(--fire); color:#fff; }
+  .btn-fire:hover { background:#c95840; }
+  .btn-row { display:flex; gap:8px; flex-wrap:wrap; }
+
+  /* ── FEED ── */
+  .feed { display:flex; flex-direction:column; gap:0; }
+  .feed-item { display:flex; gap:12px; padding:11px 0; border-bottom:1px solid rgba(0,0,0,.05); align-items:flex-start; }
+  .feed-item:last-child { border-bottom:none; }
+  .feed-dot { width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+  .feed-dot.in  { background:var(--sky); }
+  .feed-dot.out { background:var(--leaf); }
+  .feed-dot.report { background:var(--fire); }
+  .feed-msg { font-size:12px; color:var(--ink); line-height:1.5; flex:1; }
+  .feed-meta { font-size:10px; color:#aaa; margin-top:2px; font-family:'Space Mono',monospace; }
+  .feed-phone { font-family:'Space Mono',monospace; font-size:11px; color:var(--moss); }
+
+  /* ── ALERT ── */
+  .toast {
+    position:fixed; bottom:24px; right:24px; background:var(--forest);
+    color:var(--lime); padding:12px 20px; border-radius:10px;
+    font-size:13px; opacity:0; transform:translateY(8px);
+    transition:all .2s; pointer-events:none; z-index:999;
+    font-family:'Space Grotesk',sans-serif;
+  }
+  .toast.show { opacity:1; transform:translateY(0); }
+
+  /* ── KEYWORD PILLS ── */
+  .kw-grid { display:flex; flex-wrap:wrap; gap:8px; }
+  .kw-card {
+    background:var(--mist); border:1px solid rgba(82,183,136,.2);
+    border-radius:8px; padding:12px 14px; flex:1; min-width:120px;
+  }
+  .kw-word { font-family:'Space Mono',monospace; font-size:14px; font-weight:700; color:var(--moss); }
+  .kw-desc { font-size:11px; color:#666; margin-top:3px; line-height:1.4; }
+
+  /* ── STORY CARDS ── */
+  .story-card {
+    background:#fff; border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; margin-bottom:10px;
+  }
+  .story-species { font-size:11px; font-weight:600; color:var(--moss); text-transform:uppercase; letter-spacing:.06em; }
+  .story-text { font-size:13px; color:var(--ink); margin-top:6px; line-height:1.6; font-family:'Space Mono',monospace; background:rgba(216,243,220,.3); padding:10px; border-radius:6px; }
+  .story-part { font-size:10px; color:#aaa; margin-top:6px; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align:center; padding:40px 20px; color:#aaa; font-size:13px; }
+  .empty-icon { font-size:32px; margin-bottom:8px; opacity:.4; }
+
+  /* ── LIVE DOT ── */
+  .live { display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--leaf); }
+  .live-dot { width:6px; height:6px; border-radius:50%; background:var(--leaf); animation:pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  .webhook-box {
+    background:var(--forest); color:var(--lime); font-family:'Space Mono',monospace;
+    font-size:12px; padding:14px 16px; border-radius:8px; line-height:1.7;
+  }
+  .webhook-box span { color:var(--amber); }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">WildSMS</div>
+    <div class="logo-sub">Wildlife Awareness · Nigeria</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-item active" onclick="nav('dashboard',this)">
+      <span class="nav-icon">◈</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="nav('compose',this)">
+      <span class="nav-icon">✉</span> Compose & Send
+    </div>
+    <div class="nav-item" onclick="nav('stories',this)">
+      <span class="nav-icon">◎</span> Story Library
+    </div>
+    <div class="nav-item" onclick="nav('reports',this)">
+      <span class="nav-icon">⚑</span> Threat Reports
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="at-badge">Team Wildsms Solution built for Conservation & Wildlife Hackathon</div>
+  </div>
+</aside>
+
+<main class="main">
+
+  <!-- ── DASHBOARD ── -->
+  <div id="page-dashboard" class="page active">
+    <div class="page-header">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub">Real-time overview of WildSMS activity</div>
+        </div>
+        <div class="live"><div class="live-dot"></div> Live</div>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card green">
+        <div class="stat-num" id="stat-subs">0</div>
+        <div class="stat-label">Active subscribers</div>
+        <div class="stat-icon">◉</div>
+      </div>
+      <div class="stat-card sky">
+        <div class="stat-num" id="stat-msgs">0</div>
+        <div class="stat-label">Messages exchanged</div>
+        <div class="stat-icon">✉</div>
+      </div>
+      <div class="stat-card fire">
+        <div class="stat-num" id="stat-reports">0</div>
+        <div class="stat-label">Threats reported</div>
+        <div class="stat-icon">⚑</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-num">35369</div>
+        <div class="stat-label">SMS shortcode</div>
+        <div class="stat-icon">◈</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Recent messages</span>
+          <span class="badge badge-env" id="msg-count-badge">0 total</span>
+        </div>
+        <div class="panel-body" style="max-height:320px;overflow-y:auto">
+          <div class="feed" id="msg-feed">
+            <div class="empty"><div class="empty-icon">✉</div>No messages yet. Send a test SMS.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Keywords</span>
+        </div>
+        <div class="panel-body">
+          <div class="kw-grid">
+            <div class="kw-card"><div class="kw-word">JOIN</div><div class="kw-desc">Subscribe to WildSMS alerts</div></div>
+            <div class="kw-card"><div class="kw-word">FACT</div><div class="kw-desc">Receive a wildlife fact</div></div>
+            <div class="kw-card"><div class="kw-word">STORY</div><div class="kw-desc">Start a 3-part story series</div></div>
+            <div class="kw-card"><div class="kw-word">MORE</div><div class="kw-desc">Continue the current story</div></div>
+            <div class="kw-card"><div class="kw-word">REPORT</div><div class="kw-desc">Flag poaching, fire, or trap</div></div>
+            <div class="kw-card"><div class="kw-word">STOP</div><div class="kw-desc">Unsubscribe from alerts</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="full-col panel">
+      <div class="panel-head">
+        <span class="panel-title">Threat reports</span>
+        <span class="badge badge-new" id="report-count-badge">0 reports</span>
+      </div>
+      <div class="panel-body">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Type</th><th>Phone</th><th>Time</th><th>Status</th></tr></thead>
+          <tbody id="report-table">
+            <tr><td colspan="5" style="text-align:center;color:#aaa;padding:24px;font-size:12px;">No threat reports yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── COMPOSE ── -->
+  <div id="page-compose" class="page">
+    <div class="page-header">
+      <div class="page-title">Compose & Send</div>
+      <div class="page-sub">Send a test SMS to a single number, or broadcast to all subscribers</div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">Send to single number</span></div>
+        <div class="panel-body">
+          <div class="compose-area">
+            <div>
+              <div class="field-label">Phone number</div>
+              <input type="tel" id="single-phone" placeholder="+2348012345678">
+            </div>
+            <div>
+              <div class="field-label">Message</div>
+              <textarea id="single-msg" maxlength="160" oninput="countMsg('single-msg','single-bar','single-count')" placeholder="Type your SMS here…"></textarea>
+              <div class="char-bar"><div class="char-fill" id="single-bar" style="width:0%"></div></div>
+              <div class="char-meta" id="single-count">0 / 160 chars · 1 SMS</div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="sendSingle()">Send SMS</button>
+              <button class="btn btn-secondary" onclick="fillTest()">Use test number</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">Broadcast to all subscribers</span></div>
+        <div class="panel-body">
+          <div class="compose-area">
+            <div>
+              <div class="field-label">Broadcast type</div>
+              <select id="broadcast-type" onchange="setBroadcastPreset()">
+                <option value="custom">Custom message</option>
+                <option value="fact">Daily wildlife fact</option>
+                <option value="story">Start a story series</option>
+              </select>
+            </div>
+            <div>
+              <div class="field-label">Message preview</div>
+              <textarea id="broadcast-msg" maxlength="160" oninput="countMsg('broadcast-msg','bcast-bar','bcast-count')" placeholder="Select a type above or write a custom message…"></textarea>
+              <div class="char-bar"><div class="char-fill" id="bcast-bar" style="width:0%"></div></div>
+              <div class="char-meta" id="bcast-count">0 / 160 chars · 1 SMS</div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-fire" onclick="sendBroadcast()">Broadcast now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STORIES ── -->
+  <div id="page-stories" class="page">
+    <div class="page-header">
+      <div class="page-title">Story library</div>
+      <div class="page-sub">All 3-part SMS stories — each part is exactly 160 characters</div>
+    </div>
+    <div id="story-list"></div>
+  </div>
+
+  <!-- ── REPORTS ── -->
+  <div id="page-reports" class="page">
+    <div class="page-header">
+      <div class="page-title">Threat reports</div>
+      <div class="page-sub">Reports submitted by subscribers via SMS</div>
+    </div>
+    <div class="panel">
+      <div class="panel-body">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Type</th><th>Phone</th><th>Details</th><th>Time</th><th>Status</th></tr></thead>
+          <tbody id="full-report-table">
+            <tr><td colspan="6" style="text-align:center;color:#aaa;padding:32px;font-size:12px;">No reports yet. When subscribers text REPORT, they appear here.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const stories = [
+  { species:"Cross River Gorilla", parts:[
+    "WILDSMS | Deep in Afi Mountain, Emeka's grandfather once saw gorillas every morning. Today, fewer than 300 remain on earth. All live near YOU. Reply MORE for Part 2.",
+    "WILDSMS | Pt 2: Poachers took the rest. But rangers, farmers & students like you stopped them. Afi Mountain is recovering — because people chose to speak up. Reply MORE for Pt 3.",
+    "WILDSMS | Pt 3: One gorilla family needs 20km of forest. Protect the trees near you. Report illegal logging: text REPORT to 35369. You are the last line of defence. #WildSMS"
+  ]},
+  { species:"Pangolin", parts:[
+    "WILDSMS | Nkechi found a pangolin curled like a stone near her farm in Cross River. She called a ranger instead of selling it. That one call protected a species. Reply MORE.",
+    "WILDSMS | Pt 2: Nigeria is the world's #1 pangolin trafficking hub. Traffickers pay ₦500 — then sell abroad for ₦500,000. The profit leaves Nigeria. The loss stays. Reply MORE.",
+    "WILDSMS | Pt 3: Pangolins eat termites that destroy your crops. See one? Text REPORT PANGOLIN to 35369. Protect your ally. #WildSMS"
+  ]},
+  { species:"African Forest Elephant", parts:[
+    "WILDSMS | In Okomu, an elephant knocked Bode's fence. He was angry — until rangers showed him the elephant's path was older than his farm. Reply MORE.",
+    "WILDSMS | Pt 2: Forest elephants plant trees. Every seed they carry grows a forest. Without them, Nigeria loses its lungs. Bode now leaves a corridor open. Reply MORE.",
+    "WILDSMS | Pt 3: If an animal threatens your crops, text REPORT ELEPHANT to 35369. Rangers respond within 2 hours. Live together. #WildSMS"
+  ]}
+];
+
+// Populate story library
+const storyList = document.getElementById('story-list');
+stories.forEach((s, si) => {
+  const div = document.createElement('div');
+  div.style.marginBottom = '18px';
+  div.innerHTML = `<div class="story-card" style="border-left:3px solid var(--leaf)">
+    <div class="story-species">${s.species}</div>
+    ${s.parts.map((p,i) => `
+      <div style="margin-top:10px">
+        <div class="story-part">Part ${i+1} · ${p.length} chars</div>
+        <div class="story-text">${p}</div>
+      </div>`).join('')}
+  </div>`;
+  storyList.appendChild(div);
+});
+
+// Nav
+function nav(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  if (id === 'dashboard' || id === 'reports') loadStats();
+}
+
+// Load stats from API
+async function loadStats() {
+  try {
+    const r = await fetch('/api/stats');
+    const d = await r.json();
+    document.getElementById('stat-subs').textContent = d.activeSubscribers || 0;
+    document.getElementById('stat-msgs').textContent = d.totalMessages || 0;
+    document.getElementById('stat-reports').textContent = d.totalReports || 0;
+    document.getElementById('msg-count-badge').textContent = (d.totalMessages||0)+' total';
+    document.getElementById('report-count-badge').textContent = (d.totalReports||0)+' reports';
+
+    // Message feed
+    const feed = document.getElementById('msg-feed');
+    if (d.recentMessages && d.recentMessages.length) {
+      feed.innerHTML = d.recentMessages.map(m => `
+        <div class="feed-item">
+          <div class="feed-dot ${m.direction === 'inbound' ? 'in' : 'out'}"></div>
+          <div>
+            <div class="feed-msg">${m.message}</div>
+            <div class="feed-meta">
+              <span class="feed-phone">${m.phone}</span> ·
+              <span class="badge ${m.direction==='inbound'?'badge-in':'badge-out'}">${m.direction}</span>
+              ${m.keyword ? `· <code style="font-size:10px;background:rgba(0,0,0,.05);padding:1px 5px;border-radius:3px">${m.keyword}</code>` : ''}
+              · ${new Date(m.timestamp).toLocaleTimeString()}
+            </div>
+          </div>
+        </div>`).join('');
+    } else {
+      feed.innerHTML = '<div class="empty"><div class="empty-icon">✉</div>No messages yet. Send a test SMS to shortcode 35369.</div>';
+    }
+
+    // Reports
+    const tbody = document.getElementById('report-table');
+    const ftbody = document.getElementById('full-report-table');
+    if (d.recentReports && d.recentReports.length) {
+      const rows = d.recentReports.map(r => `
+        <tr>
+          <td style="font-family:'Space Mono',monospace;font-size:11px">#${r.id}</td>
+          <td><span class="badge badge-new">${r.type}</span></td>
+          <td style="font-family:'Space Mono',monospace;font-size:11px">${r.phone}</td>
+          <td>${new Date(r.timestamp).toLocaleString()}</td>
+          <td><span class="badge badge-new">New</span></td>
+        </tr>`).join('');
+      tbody.innerHTML = rows;
+      ftbody.innerHTML = d.recentReports.map(r => `
+        <tr>
+          <td style="font-family:'Space Mono',monospace;font-size:11px">#${r.id}</td>
+          <td><span class="badge badge-new">${r.type}</span></td>
+          <td style="font-family:'Space Mono',monospace;font-size:11px">${r.phone}</td>
+          <td style="font-size:11px;color:#666;max-width:180px">${r.details||'—'}</td>
+          <td style="font-size:11px">${new Date(r.timestamp).toLocaleString()}</td>
+          <td><span class="badge badge-new">New</span></td>
+        </tr>`).join('');
+    }
+  } catch(e) {
+    console.log('Stats fetch failed (expected if running locally):', e.message);
+  }
+}
+
+// Auto-refresh every 8 seconds
+setInterval(loadStats, 8000);
+loadStats();
+
+// Char counter
+function countMsg(taId, barId, countId) {
+  const ta = document.getElementById(taId);
+  const len = ta.value.length;
+  const pct = (len/160)*100;
+  const bar = document.getElementById(barId);
+  bar.style.width = Math.min(pct,100)+'%';
+  bar.className = 'char-fill' + (pct > 100 ? ' over' : pct > 85 ? ' warn' : '');
+  document.getElementById(countId).textContent = len+' / 160 chars · '+Math.ceil(Math.max(len,1)/160)+' SMS';
+}
+
+function fillTest() {
+  document.getElementById('single-phone').value = '+2348012345678';
+}
+
+// Broadcast presets
+const presets = {
+  fact: "WILDFACT: The Cross River gorilla shares 98.6% of human DNA. Fewer than 300 remain — less than a Nigerian village. They are your cousins. Protect them. Reply STORY.",
+  story: "WILDSMS | Deep in Afi Mountain, Emeka's grandfather once saw gorillas every morning. Today, fewer than 300 remain on earth. All live near YOU. Reply MORE for Part 2.",
+  custom: ''
+};
+function setBroadcastPreset() {
+  const t = document.getElementById('broadcast-type').value;
+  document.getElementById('broadcast-msg').value = presets[t] || '';
+  countMsg('broadcast-msg','bcast-bar','bcast-count');
+}
+
+// Send single
+async function sendSingle() {
+  const phone = document.getElementById('single-phone').value.trim();
+  const message = document.getElementById('single-msg').value.trim();
+  if (!phone || !message) return toast('Enter a phone number and message');
+  try {
+    const r = await fetch('/broadcast/custom', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ phone, message })
+    });
+    const d = await r.json();
+    if (d.success) toast('SMS sent to '+phone);
+    else toast('Error: '+(d.error||'unknown'));
+  } catch(e) {
+    toast('Could not reach server. Is it running?');
+  }
+}
+
+// Broadcast
+async function sendBroadcast() {
+  const type = document.getElementById('broadcast-type').value;
+  const message = document.getElementById('broadcast-msg').value.trim();
+  if (!message && type === 'custom') return toast('Write a message first');
+  try {
+    const endpoint = type === 'custom' ? '/broadcast/custom' : '/broadcast/'+type;
+    const body = type === 'custom' ? { message } : {};
+    const r = await fetch(endpoint, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (d.success !== false) toast('Broadcast sent to '+(d.sent||0)+' subscribers');
+    else toast('Error: '+(d.message||d.error||'unknown'));
+  } catch(e) {
+    toast('Could not reach server. Is it running?');
+  }
+}
+
+// Toast
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

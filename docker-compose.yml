@@ -1,0 +1,31 @@
+version: '3.9'
+
+services:
+  wildsms:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: wildsms
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3000
+      - AT_API_KEY=${AT_API_KEY}
+      - AT_USERNAME=${AT_USERNAME}
+      - AT_SMS_SHORTCODE=${AT_SMS_SHORTCODE}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "com.wildsms.description=Wildlife SMS awareness platform"
+      - "com.wildsms.version=1.0.0"
+
+# To add a database later, uncomment:
+# volumes:
+#   wildsms_data:
